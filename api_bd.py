@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 import requests
 from fastapi import FastAPI, HTTPException, Request
 from json import dump, load
-from modelos.api_bd.modelos_bd import PrizesResponse, PrizeUpdate
+from modelos.api_bd.modelos_bd import PrizesResponse, PrizeUpdate, Prize
 import json
 
 ARCHIVO_BD = "./datos/bd.json"
@@ -141,3 +141,41 @@ async def update_prize(year: int, category: str, prize_update: PrizeUpdate, requ
     guardar_datos_nobel_en_archivo(datos_nobel)
 
     return premio
+
+
+@app.delete("/prizes/{year}/{category}")
+async def delete_prize(year: int, category: str, request: Request):
+    datos_nobel: PrizesResponse = request.app.state.datos_nobel
+
+    # Encuentro el primer premio que coincida con el año y la categoría
+    premio = next((p for p in datos_nobel.prizes if p.year == year and p.category.lower() == category), None)
+
+    if not premio:
+        raise HTTPException(status_code=404, detail="No se encontró el premio para el año y la categoría especificados.")
+
+    # Eliminar el premio de la lista
+    datos_nobel.prizes.remove(premio)
+
+    guardar_datos_nobel_en_archivo(datos_nobel)
+
+    return {"detail": "Premio eliminado exitosamente."}
+
+
+@app.post("/prize")
+async def create_prize(prize: Prize, request: Request):
+    datos_nobel: PrizesResponse = request.app.state.datos_nobel
+
+    # Crear un nuevo premio
+    nuevo_premio = Prize(
+        year=prize.year,
+        category=prize.category,
+        laureates=prize.laureates,
+        overallMotivation=prize.overallMotivation
+    )
+
+    # Agregar el nuevo premio a la lista de premios
+    datos_nobel.prizes.append(nuevo_premio)
+
+    guardar_datos_nobel_en_archivo(datos_nobel)
+
+    return nuevo_premio.model_dump(exclude_none=True)
