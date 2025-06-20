@@ -30,6 +30,5 @@ class LaureateUpdate(BaseModel):
 
 
 class PrizeUpdate(BaseModel):
-    year: Optional[int] = None
-    category: Optional[str] = None
     laureates: Optional[List[LaureateUpdate]] = None
+    overallMotivation: Optional[str] = None
