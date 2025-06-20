@@ -107,7 +107,6 @@ def put_modificar_laureado():
             }
         ],
         "overallMotivation": overall
-
     }
 
     # Se hace el PUT al endpoint con año y categoría (debería incluir id si el servidor lo espera)
@@ -139,7 +138,7 @@ def menu():
         print("3. Buscar por año y categoría")
         print("4. Agregar nuevo premio")
         print("5. Modificar laureado")
-        print("6. Eliminar premio")  
+        print("6. Eliminar premio")
         print("0. Salir")
 
         opcion = input("Elegí una opción: ")
@@ -155,7 +154,7 @@ def menu():
         elif opcion == "5":
             put_modificar_laureado()
         elif opcion == "6":
-            delete_eliminar_premio() 
+            delete_eliminar_premio()
         elif opcion == "0":
             print("¡Chau!")
             break
@@ -166,4 +165,3 @@ def menu():
 # Punto de entrada del script
 if __name__ == "__main__":
     menu()
-
