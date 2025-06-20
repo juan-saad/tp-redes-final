@@ -1,10 +1,12 @@
-from os import path, makedirs
+import json
 from contextlib import asynccontextmanager
+from json import dump, load
+from os import path, makedirs
+
 import requests
 from fastapi import FastAPI, HTTPException, Request
-from json import dump, load
+
 from modelos.api_bd.modelos_bd import PrizesResponse, PrizeUpdate, Prize
-import json
 
 ARCHIVO_BD = "./datos/bd.json"
 URL_DATOS = "https://api.nobelprize.org/v1/prize.json"
@@ -34,10 +36,7 @@ def descargar_datos_si_no_existe(ruta_archivo: str):
 
             print("Archivo descargado y guardado exitosamente.")
         except requests.exceptions.RequestException as e:
-            raise HTTPException(
-                status_code=500,
-                detail=f"No se pudo obtener el archivo desde {URL_DATOS}: {str(e)}"
-            )
+            raise HTTPException(status_code=500, detail=f"No se pudo obtener el archivo desde {URL_DATOS}: {str(e)}")
     else:
         print(f"El archivo ya existe en {ruta_archivo}. Usando el archivo existente.")
 
@@ -59,10 +58,7 @@ def cargar_datos_desde_archivo(ruta_archivo: str) -> PrizesResponse:
         with open(ruta_archivo, "r", encoding="utf-8") as f:
             return PrizesResponse.model_validate(load(f))
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error al cargar los datos desde {ruta_archivo}: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Error al cargar los datos desde {ruta_archivo}: {str(e)}")
 
 
 def guardar_datos_nobel_en_archivo(datos_nobel: PrizesResponse):
@@ -102,13 +98,12 @@ async def get_prizes_by_year_and_category(year: int, category: str, request: Req
     datos_nobel: PrizesResponse = request.app.state.datos_nobel
 
     # Filtrar los premios por año y categoría
-    premios_filtrados = [
-        premio for premio in datos_nobel.prizes
-        if premio.year == year and premio.category.lower() == category.lower()
-    ]
+    premios_filtrados = [premio for premio in datos_nobel.prizes if
+                         premio.year == year and premio.category.lower() == category.lower()]
 
     if not premios_filtrados:
-        raise HTTPException(status_code=404, detail="No se encontraron premios para el año y la categoria especificada.")
+        raise HTTPException(status_code=404,
+                            detail="No se encontraron premios para el año y la categoria especificada.")
 
     return [prize.model_dump(exclude_none=True) for prize in premios_filtrados]
 
@@ -118,7 +113,7 @@ async def get_prizes_by_year(year: int, request: Request):
     datos_nobel: PrizesResponse = request.app.state.datos_nobel
 
     # Filtrar los premios por año y categoría
-    premios_filtrados = [ premio for premio in datos_nobel.prizes if premio.year == year ]
+    premios_filtrados = [premio for premio in datos_nobel.prizes if premio.year == year]
 
     if not premios_filtrados:
         raise HTTPException(status_code=404, detail="No se encontraron premios para el año solicitado.")
@@ -134,7 +129,8 @@ async def update_prize(year: int, category: str, prize_update: PrizeUpdate, requ
     premio = next((p for p in datos_nobel.prizes if p.year == year and p.category.lower() == category), None)
 
     if not premio:
-        raise HTTPException(status_code=404, detail="No se encontró el premio para el año y la categoría especificados.")
+        raise HTTPException(status_code=404,
+                            detail="No se encontró el premio para el año y la categoría especificados.")
 
     # Actualizar atributos del premio
     if prize_update.laureates:
@@ -145,7 +141,8 @@ async def update_prize(year: int, category: str, prize_update: PrizeUpdate, requ
                 for attr, value in laureate_update.model_dump(exclude_unset=True).items():
                     setattr(laureate, attr, value)
             else:
-                raise HTTPException(status_code=404, detail=f"El laureado de ID: {laureate_update.id} no fue encontrado.")
+                raise HTTPException(status_code=404,
+                                    detail=f"El laureado de ID: {laureate_update.id} no fue encontrado.")
 
     guardar_datos_nobel_en_archivo(datos_nobel)
 
@@ -160,7 +157,8 @@ async def delete_prize(year: int, category: str, request: Request):
     premio = next((p for p in datos_nobel.prizes if p.year == year and p.category.lower() == category), None)
 
     if not premio:
-        raise HTTPException(status_code=404, detail="No se encontró el premio para el año y la categoría especificados.")
+        raise HTTPException(status_code=404,
+                            detail="No se encontró el premio para el año y la categoría especificados.")
 
     # Eliminar el premio de la lista
     datos_nobel.prizes.remove(premio)
@@ -175,12 +173,8 @@ async def create_prize(prize: Prize, request: Request):
     datos_nobel: PrizesResponse = request.app.state.datos_nobel
 
     # Crear un nuevo premio
-    nuevo_premio = Prize(
-        year=prize.year,
-        category=prize.category,
-        laureates=prize.laureates,
-        overallMotivation=prize.overallMotivation
-    )
+    nuevo_premio = Prize(year=prize.year, category=prize.category, laureates=prize.laureates,
+                         overallMotivation=prize.overallMotivation)
 
     # Agregar el nuevo premio a la lista de premios
     datos_nobel.prizes.append(nuevo_premio)
