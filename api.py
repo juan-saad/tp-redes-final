@@ -4,24 +4,27 @@ from requests import Request
 
 from modelos.api_bd.modelos_bd import PrizeUpdate, Prize
 
+# Define una variable global para la URL base
+BASE_URL = "http://localhost:8001"
+
 app = FastAPI()
 
 
 @app.get("/")
 async def root(request: Request):
-    respuesta = requests.get("http://localhost:8001/")
+    respuesta = requests.get(f"{BASE_URL}/")
     return respuesta.json()
 
 
 @app.get("/prizes/{year}/{category}")
 async def get_prizes_by_year_and_category(year: int, category: str, request: Request):
-    respuesta = requests.get(f"http://localhost:8001/prizes/{year}/{category}/")
+    respuesta = requests.get(f"{BASE_URL}/prizes/{year}/{category}/")
     return respuesta.json()
 
 
 @app.get("/prizes/{year}")
 async def get_prizes_by_year(year: int, request: Request):
-    respuesta = requests.get(f"http://localhost:8001/prizes/{year}")
+    respuesta = requests.get(f"{BASE_URL}/prizes/{year}")
     return respuesta.json()
 
 
@@ -31,16 +34,15 @@ async def update_prize(year: int, category: str, prize_update: PrizeUpdate, requ
     body = prize_update.model_dump(exclude_none=True)
 
     # Hacemos la solicitud PUT al endpoint externo con el cuerpo JSON
-    respuesta = requests.put(f"http://localhost:8001/prizes/{year}/{category}", json=body)
+    respuesta = requests.put(f"{BASE_URL}/prizes/{year}/{category}", json=body)
 
     # Devolvemos la respuesta en formato JSON
     return respuesta.json()
 
-
 @app.delete("/prizes/{year}/{category}")
 async def delete_prize(year: int, category: str, request: Request):
     # Hacemos la solicitud DELETE al endpoint externo
-    respuesta = requests.delete(f"http://localhost:8001/prizes/{year}/{category}")
+    respuesta = requests.delete(f"{BASE_URL}/prizes/{year}/{category}")
 
     # Validamos si el recurso fue eliminado exitosamente
     if respuesta.status_code != 200:
@@ -56,7 +58,7 @@ async def create_prize(prize: Prize, request: Request):
     body = prize.model_dump(exclude_none=True)
 
     # Hacemos la solicitud POST al endpoint externo con el cuerpo JSON
-    respuesta = requests.post("http://localhost:8001/prizes", json=body)
+    respuesta = requests.post(f"{BASE_URL}/prizes", json=body)
 
     # Si hay algún error en la solicitud, levantamos una excepción HTTP
     if respuesta.status_code != 200:
