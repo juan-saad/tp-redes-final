@@ -2,7 +2,7 @@ import requests
 from requests.auth import HTTPBasicAuth
 
 # URL base del servidor
-BASE_URL = "http://127.0.0.1:8000"
+BASE_URL = "http://0.0.0.0:8000"
 
 # Credenciales para autenticación básica
 AUTH = HTTPBasicAuth("admin", "1234")
