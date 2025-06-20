@@ -1,11 +1,9 @@
 import requests
-from fastapi import FastAPI, HTTPException
-from requests import Request
-
+from fastapi import FastAPI, HTTPException, Request
 from modelos.api_bd.modelos_bd import PrizeUpdate, Prize
 
 # Define una variable global para la URL base
-BASE_URL = "http://localhost:8001"
+BASE_URL = "http://0.0.0.0:8001"
 
 app = FastAPI()
 
