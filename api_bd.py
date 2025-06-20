@@ -3,7 +3,8 @@ from contextlib import asynccontextmanager
 import requests
 from fastapi import FastAPI, HTTPException, Request
 from json import dump, load
-from modelos.api_bd.modelos_bd import PrizesResponse
+from modelos.api_bd.modelos_bd import PrizesResponse, PrizeUpdate
+import json
 
 ARCHIVO_BD = "./datos/bd.json"
 URL_DATOS = "https://api.nobelprize.org/v1/prize.json"
@@ -64,6 +65,11 @@ def cargar_datos_desde_archivo(ruta_archivo: str) -> PrizesResponse:
         )
 
 
+def guardar_datos_nobel_en_archivo(datos_nobel: PrizesResponse):
+    with open(ARCHIVO_BD, "w", encoding="utf-8") as f:
+        json.dump(datos_nobel.model_dump(), f, ensure_ascii=False, indent=2)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     descargar_datos_si_no_existe(ARCHIVO_BD)
@@ -109,3 +115,29 @@ async def get_prizes_by_year(year: int, request: Request):
         raise HTTPException(status_code=404, detail="No se encontraron premios para el año solicitado.")
 
     return [prize.model_dump(exclude_none=True) for prize in premios_filtrados]
+
+
+@app.put("/prizes/{year}/{category}")
+async def update_prize(year: int, category: str, prize_update: PrizeUpdate, request: Request):
+    datos_nobel: PrizesResponse = request.app.state.datos_nobel
+
+    # Encuentro el primer premio que coincida con el año y la categoría
+    premio = next((p for p in datos_nobel.prizes if p.year == year and p.category.lower() == category), None)
+
+    if not premio:
+        raise HTTPException(status_code=404, detail="No se encontró el premio para el año y la categoría especificados.")
+
+    # Actualizar atributos del premio
+    if prize_update.laureates:
+        for laureate_update in prize_update.laureates:
+            laureate = next((l for l in premio.laureates if l.id == laureate_update.id), None)
+            if laureate:
+                # Actualizar atributos del laureado
+                for attr, value in laureate_update.model_dump(exclude_unset=True).items():
+                    setattr(laureate, attr, value)
+            else:
+                raise HTTPException(status_code=404, detail=f"El laureado de ID: {laureate_update.id} no fue encontrado.")
+
+    guardar_datos_nobel_en_archivo(datos_nobel)
+
+    return premio
