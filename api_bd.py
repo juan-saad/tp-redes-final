@@ -95,4 +95,17 @@ async def get_prizes_by_year_and_category(year: int, category: str, request: Req
     if not premios_filtrados:
         raise HTTPException(status_code=404, detail="No se encontraron premios para el año y la categoria especificada.")
 
-    return {"Premios": [prize.model_dump(exclude_none=True) for prize in premios_filtrados]}
+    return [prize.model_dump(exclude_none=True) for prize in premios_filtrados]
+
+
+@app.get("/prizes/{year}")
+async def get_prizes_by_year(year: int, request: Request):
+    datos_nobel: PrizesResponse = request.app.state.datos_nobel
+
+    # Filtrar los premios por año y categoría
+    premios_filtrados = [ premio for premio in datos_nobel.prizes if premio.year == year ]
+
+    if not premios_filtrados:
+        raise HTTPException(status_code=404, detail="No se encontraron premios para el año solicitado.")
+
+    return [prize.model_dump(exclude_none=True) for prize in premios_filtrados]
