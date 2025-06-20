@@ -66,6 +66,15 @@ def cargar_datos_desde_archivo(ruta_archivo: str) -> PrizesResponse:
 
 
 def guardar_datos_nobel_en_archivo(datos_nobel: PrizesResponse):
+    """
+    Serializa y escribe los datos de Premios Nobel en disco en formato JSON.
+
+    Argumentos:
+        datos_nobel (PrizesResponse): Modelo Pydantic que contiene la lista de premios Nobel a guardar.
+
+    Retorna:
+        None
+    """
     with open(ARCHIVO_BD, "w", encoding="utf-8") as f:
         json.dump(datos_nobel.model_dump(), f, ensure_ascii=False, indent=2)
 
