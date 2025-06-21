@@ -3,7 +3,7 @@ from typing import List, Optional
 
 
 class Laureate(BaseModel):
-    id: Optional[int]
+    id: Optional[int] = None
     firstname: Optional[str] = None
     surname: Optional[str] = None
     motivation: Optional[str] = None
@@ -22,7 +22,7 @@ class PrizesResponse(BaseModel):
 
 
 class LaureateUpdate(BaseModel):
-    id: int
+    id: Optional[int] = None
     firstname: Optional[str] = None
     surname: Optional[str] = None
     motivation: Optional[str] = None
