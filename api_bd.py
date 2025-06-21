@@ -6,7 +6,7 @@ from os import path, makedirs
 import requests
 from fastapi import FastAPI, HTTPException, Request
 
-from modelos.api_bd.modelos_bd import PrizesResponse, PrizeUpdate, Prize
+from modelos.api_bd.modelos_bd import PrizesResponse, PrizeUpdate, Prize, Laureate
 
 ARCHIVO_BD = "./datos/bd.json"
 URL_DATOS = "https://api.nobelprize.org/v1/prize.json"
@@ -75,6 +75,13 @@ def guardar_datos_nobel_en_archivo(datos_nobel: PrizesResponse):
         json.dump(datos_nobel.model_dump(), f, ensure_ascii=False, indent=2)
 
 
+def get_max_laureate_id(laureates: list[Laureate]) -> int:
+    """
+    Devuelve el siguiente ID de laureado tomando el máximo existente + 1.
+    """
+    return max((l.id for l in laureates), default=0)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     descargar_datos_si_no_existe(ARCHIVO_BD)
@@ -132,6 +139,10 @@ async def update_prize(year: int, category: str, prize_update: PrizeUpdate, requ
         raise HTTPException(status_code=404,
                             detail="No se encontró el premio para el año y la categoría especificados.")
 
+    # Actualizar overallMotivation si se proporciona
+    if prize_update.overallMotivation is not None:
+        premio.overallMotivation = prize_update.overallMotivation
+
     # Actualizar atributos del premio
     if prize_update.laureates:
         for laureate_update in prize_update.laureates:
@@ -172,8 +183,20 @@ async def delete_prize(year: int, category: str, request: Request):
 async def create_prize(prize: Prize, request: Request):
     datos_nobel: PrizesResponse = request.app.state.datos_nobel
 
+    # Calculamos el ID inicial basándonos en los laureados existentes en todos los premios
+    laureates = [l for p in datos_nobel.prizes for l in p.laureates]
+    max_id = get_max_laureate_id(laureates)
+
+    # Asignamos IDs secuenciales a los nuevos laureados
+    nuevos_laureados = []
+
+    for laureado in prize.laureates:
+        max_id += 1
+        laureado.id = max_id
+        nuevos_laureados.append(laureado)
+
     # Crear un nuevo premio
-    nuevo_premio = Prize(year=prize.year, category=prize.category, laureates=prize.laureates,
+    nuevo_premio = Prize(year=prize.year, category=prize.category, laureates=nuevos_laureados,
                          overallMotivation=prize.overallMotivation)
 
     # Agregar el nuevo premio a la lista de premios

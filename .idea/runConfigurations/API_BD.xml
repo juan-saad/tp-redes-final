@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="API BD" type="Python.FastAPI">
-    <option name="additionalOptions" value="--reload --port 8001" />
+    <option name="additionalOptions" value="--host 0.0.0.0 --reload --port 8001" />
     <option name="file" value="C:\Users\Administrador\source\repos\tp-redes-final\api_bd.py" />
     <module name="tp-redes-final" />
     <option name="ENV_FILES" value="" />
