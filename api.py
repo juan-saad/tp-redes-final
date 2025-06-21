@@ -56,7 +56,7 @@ async def create_prize(prize: Prize, request: Request):
     body = prize.model_dump(exclude_none=True)
 
     # Hacemos la solicitud POST al endpoint externo con el cuerpo JSON
-    respuesta = requests.post(f"{BASE_URL}/prizes", json=body)
+    respuesta = requests.post(f"{BASE_URL}/prize", json=body)
 
     # Si hay algún error en la solicitud, levantamos una excepción HTTP
     if respuesta.status_code != 200:
