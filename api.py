@@ -32,7 +32,6 @@ def verificar_credenciales(
         )
     return {"username": credenciales.username, "role": usuario["role"]}
 
-
 # Función para verificar permisos basados en roles
 def verificar_permiso(role_requerido: str):
     def permiso_checker(usuario: dict = Depends(verificar_credenciales)):
@@ -47,10 +46,10 @@ def verificar_permiso(role_requerido: str):
 
 
 @app.get("/")
-async def root(request: Request, usuario: dict = Depends(verificar_credenciales)):
+async def root(request: Request):
     """
     Endpoint raíz de la API.
-    - **Acceso:** Permitido para todos los usuarios autenticados (`user` y `admin`).
+    - **Acceso:** Público, no requiere autenticación.
     - **Descripción:** Reenvía una solicitud al servidor final para obtener la respuesta de la raíz.
     """
     respuesta = requests.get(f"{BASE_URL}/")
