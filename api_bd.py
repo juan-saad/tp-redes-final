@@ -1,15 +1,52 @@
 import json
+import secrets
 from contextlib import asynccontextmanager
 from json import dump, load
 from os import path, makedirs
 
 import requests
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Depends, status
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
 
+from api import security
 from modelos.api_bd.modelos_bd import PrizesResponse, PrizeUpdate, Prize, Laureate
 
 ARCHIVO_BD = "./datos/bd.json"
 URL_DATOS = "https://api.nobelprize.org/v1/prize.json"
+
+# Base de datos simulada de usuarios con roles
+USUARIOS = {
+    "lector": {"password": "lector1234", "role": "lector"},
+    "admin": {"password": "admin1234", "role": "admin"},
+}
+
+
+def verificar_credenciales(credenciales: HTTPBasicCredentials = Depends(security)) -> dict:
+    usuario = USUARIOS.get(credenciales.username)
+    if not usuario or not secrets.compare_digest(credenciales.password, usuario["password"]):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Credenciales incorrectas",
+            headers={"WWW-Authenticate": "Basic"},
+        )
+    return {"username": credenciales.username, "role": usuario["role"]}
+
+
+def verificar_permiso(*roles_requeridos: str):
+    def permiso_checker(usuario: dict = Depends(verificar_credenciales)):
+
+        if usuario["role"] == "admin":
+            return usuario
+
+        if usuario["role"] not in roles_requeridos:
+            allowed = ", ".join(roles_requeridos)
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Permisos insuficientes. Se requiere uno de los roles: {allowed}"
+            )
+        return usuario
+
+    return permiso_checker
 
 
 def descargar_datos_si_no_existe(ruta_archivo: str):
@@ -92,16 +129,20 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
+# Configuración de autenticación Basic
+security = HTTPBasic()
+
 
 @app.get("/")
-async def root(request: Request):
+async def root(request: Request, usuario: dict = Depends(verificar_permiso("lector"))):
     datos_nobel: PrizesResponse = request.app.state.datos_nobel
 
     return datos_nobel.model_dump(exclude_none=True)
 
 
 @app.get("/prizes/{year}/{category}")
-async def get_prizes_by_year_and_category(year: int, category: str, request: Request):
+async def get_prizes_by_year_and_category(year: int, category: str, request: Request,
+                                          usuario: dict = Depends(verificar_permiso("lector", "admin"))):
     datos_nobel: PrizesResponse = request.app.state.datos_nobel
 
     # Filtrar los premios por año y categoría
@@ -116,7 +157,8 @@ async def get_prizes_by_year_and_category(year: int, category: str, request: Req
 
 
 @app.get("/prizes/{year}")
-async def get_prizes_by_year(year: int, request: Request):
+async def get_prizes_by_year(year: int, request: Request,
+                             usuario: dict = Depends(verificar_permiso("lector", "admin"))):
     datos_nobel: PrizesResponse = request.app.state.datos_nobel
 
     # Filtrar los premios por año y categoría
@@ -129,7 +171,8 @@ async def get_prizes_by_year(year: int, request: Request):
 
 
 @app.put("/prizes/{year}/{category}")
-async def update_prize(year: int, category: str, prize_update: PrizeUpdate, request: Request):
+async def update_prize(year: int, category: str, prize_update: PrizeUpdate, request: Request,
+                       usuario: dict = Depends(verificar_permiso("admin"))):
     datos_nobel: PrizesResponse = request.app.state.datos_nobel
 
     # Encuentro el primer premio que coincida con el año y la categoría
@@ -161,7 +204,7 @@ async def update_prize(year: int, category: str, prize_update: PrizeUpdate, requ
 
 
 @app.delete("/prizes/{year}/{category}")
-async def delete_prize(year: int, category: str, request: Request):
+async def delete_prize(year: int, category: str, request: Request, usuario: dict = Depends(verificar_permiso("admin"))):
     datos_nobel: PrizesResponse = request.app.state.datos_nobel
 
     # Encuentro el primer premio que coincida con el año y la categoría
@@ -180,7 +223,7 @@ async def delete_prize(year: int, category: str, request: Request):
 
 
 @app.post("/prize")
-async def create_prize(prize: Prize, request: Request):
+async def create_prize(prize: Prize, request: Request, usuario: dict = Depends(verificar_permiso("admin"))):
     datos_nobel: PrizesResponse = request.app.state.datos_nobel
 
     # Calculamos el ID inicial basándonos en los laureados existentes en todos los premios
