@@ -5,7 +5,7 @@ from requests.auth import HTTPBasicAuth
 BASE_URL = "http://192.168.1.4:8000"
 
 # Credenciales para autenticación básica
-AUTH = HTTPBasicAuth("admin", "1234")
+AUTH = HTTPBasicAuth("admin", "admin123")
 
 
 # Función para mostrar todos los premios
@@ -21,7 +21,7 @@ def get_mostrar_todos():
 # Función para buscar premios por año
 def get_buscar_por_año():
     year = input("Año: ")
-    r = requests.get(f"{BASE_URL}/prizes/{year}")
+    r = requests.get(f"{BASE_URL}/prizes/{year}", json=data, auth=AUTH)
     if r.ok:
         for p in r.json():
             print(f"{p['year']} - {p['category']}")
@@ -32,7 +32,7 @@ def get_buscar_por_año():
 def get_buscar_por_año_y_cat():
     year = input("Año: ")
     cat = input("Categoría: ")
-    r = requests.get(f"{BASE_URL}/prizes/{year}/{cat}")
+    r = requests.get(f"{BASE_URL}/prizes/{year}/{cat}", json=data, auth=AUTH)
     if r.ok:
         premios = r.json()
         for p in premios:
