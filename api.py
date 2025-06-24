@@ -32,18 +32,21 @@ def verificar_credenciales(
         )
     return {"username": credenciales.username, "role": usuario["role"]}
 
-# Función para verificar permisos basados en roles
-def verificar_permiso(role_requerido: str):
+def verificar_permiso(*roles_requeridos: str):
     def permiso_checker(usuario: dict = Depends(verificar_credenciales)):
-        if usuario["role"] != role_requerido and role_requerido == "admin":
+        # Admin bypass
+        if usuario["role"] == "admin":
+            return usuario
+
+        # Check against allowed roles
+        if usuario["role"] not in roles_requeridos:
+            allowed = ", ".join(roles_requeridos)
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Permisos insuficientes. Se requiere rol de administrador.",
+                detail=f"Permisos insuficientes. Se requiere uno de los roles: {allowed}"
             )
         return usuario
-
     return permiso_checker
-
 
 @app.get("/")
 async def root(request: Request):
@@ -58,7 +61,7 @@ async def root(request: Request):
 
 @app.get("/prizes/{year}/{category}")
 async def get_prizes_by_year_and_category(
-    year: int, category: str, request: Request, usuario: dict = Depends(verificar_credenciales)
+    year: int, category: str, request: Request, usuario: dict = Depends(verificar_permiso("user"))
 ):
     """
     Obtiene premios por año y categoría.
@@ -71,7 +74,7 @@ async def get_prizes_by_year_and_category(
 
 @app.get("/prizes/{year}")
 async def get_prizes_by_year(
-    year: int, request: Request, usuario: dict = Depends(verificar_credenciales)
+    year: int, request: Request, usuario: dict = Depends(verificar_permiso("user"))
 ):
     """
     Obtiene premios por año.
@@ -88,7 +91,7 @@ async def update_prize(
     category: str,
     prize_update: PrizeUpdate,
     request: Request,
-    usuario: dict = Depends(verificar_permiso("admin")),  # Solo admin puede usar este endpoint
+    usuario: dict = Depends(verificar_permiso()),  # Solo admin puede usar este endpoint
 ):
     """
     Actualiza un premio específico.
@@ -105,7 +108,7 @@ async def delete_prize(
     year: int,
     category: str,
     request: Request,
-    usuario: dict = Depends(verificar_permiso("admin")),  # Solo admin puede usar este endpoint
+    usuario: dict = Depends(verificar_permiso()),  # Solo admin puede usar este endpoint
 ):
     """
     Elimina un premio específico.
@@ -122,7 +125,7 @@ async def delete_prize(
 async def create_prize(
     prize: Prize,
     request: Request,
-    usuario: dict = Depends(verificar_permiso("admin")),  # Solo admin puede usar este endpoint
+    usuario: dict = Depends(verificar_permiso()),  # Solo admin puede usar este endpoint
 ):
     """
     Crea un nuevo premio.
