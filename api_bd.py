@@ -33,6 +33,9 @@ def verificar_credenciales(credenciales: HTTPBasicCredentials = Depends(security
 
 
 def verificar_permiso(*roles_requeridos: str):
+    if not roles_requeridos:
+        roles_requeridos = ("admin",)
+
     def permiso_checker(usuario: dict = Depends(verificar_credenciales)):
 
         if usuario["role"] == "admin":

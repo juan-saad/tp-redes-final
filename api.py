@@ -8,7 +8,7 @@ from requests.auth import HTTPBasicAuth
 from modelos.api_bd.modelos_bd import PrizeUpdate, Prize
 
 # Define una variable global para la URL base
-BASE_URL = "http://192.168.1.11:8001"
+BASE_URL = "http://localhost:8001"
 
 app = FastAPI()
 
@@ -37,6 +37,9 @@ def verificar_credenciales(
 
 
 def verificar_permiso(*roles_requeridos: str):
+    if not roles_requeridos:
+        roles_requeridos = ("admin",)
+
     def permiso_checker(usuario: dict = Depends(verificar_credenciales)):
         # Admin bypass
         if usuario["role"] == "admin":
