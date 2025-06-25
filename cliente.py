@@ -19,9 +19,9 @@ def get_mostrar_todos():
 
 
 # Función para buscar premios por año
-def get_buscar_por_año():
+def get_buscar_por_anio():
     year = input("Año: ")
-    r = requests.get(f"{BASE_URL}/prizes/{year}", json=data, auth=AUTH)
+    r = requests.get(f"{BASE_URL}/prizes/{year}", auth=AUTH)
     if r.ok:
         for p in r.json():
             print(f"{p['year']} - {p['category']}")
@@ -29,10 +29,10 @@ def get_buscar_por_año():
         print("Error:", r.status_code, r.text)
 
 # Función para buscar premios por año y categoría
-def get_buscar_por_año_y_cat():
+def get_buscar_por_anio_y_cat():
     year = input("Año: ")
     cat = input("Categoría: ")
-    r = requests.get(f"{BASE_URL}/prizes/{year}/{cat}", json=data, auth=AUTH)
+    r = requests.get(f"{BASE_URL}/prizes/{year}/{cat}", auth=AUTH)
     if r.ok:
         premios = r.json()
         for p in premios:
@@ -157,9 +157,9 @@ def menu():
         if opcion == "1":
             get_mostrar_todos()
         elif opcion == "2":
-            get_buscar_por_año()
+            get_buscar_por_anio()
         elif opcion == "3":
-            get_buscar_por_año_y_cat()
+            get_buscar_por_anio_y_cat()
         elif opcion == "4":
             post_agregar_premio()
         elif opcion == "5":
