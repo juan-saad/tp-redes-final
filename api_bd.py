@@ -1,8 +1,11 @@
+from collections import deque
+from datetime import datetime, timedelta
 import json
 import secrets
 from contextlib import asynccontextmanager
 from json import dump, load
 from os import path, makedirs
+from typing import Deque, Dict
 
 import requests
 from fastapi import FastAPI, HTTPException, Request, Depends, status
@@ -131,6 +134,33 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+
+
+VENTANA = timedelta(seconds=1)
+MAX_PETICIONES = 5
+
+cubos_ip: Dict[str, Deque[datetime]] = {}
+
+@app.middleware("http")
+async def limitador(request: Request, call_next):
+    ip = request.client.host
+    ahora = datetime.now(datetime.timezone.utc)
+
+    cubo = cubos_ip.setdefault(ip, deque())
+
+    while cubo and (ahora - cubo[0]) > VENTANA:
+        cubo.popleft()
+
+    if len(cubo) >= MAX_PETICIONES:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Demasiadas solicitudes: límite 5 req/s",
+        )
+
+    cubo.append(ahora)
+    respuesta = await call_next(request)
+    return respuesta
+
 
 # Configuración de autenticación Basic
 security = HTTPBasic()

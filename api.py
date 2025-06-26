@@ -1,4 +1,7 @@
 import secrets
+from datetime import datetime, timedelta
+from collections import deque
+from typing import Dict, Deque
 
 import requests
 from fastapi import FastAPI, HTTPException, Request, Depends, status
@@ -12,10 +15,35 @@ BASE_URL = "http://localhost:8001"
 
 app = FastAPI()
 
-# Configuración de autenticación Basic
+VENTANA = timedelta(seconds=1)
+MAX_PETICIONES = 5
+
+cubos_ip: Dict[str, Deque[datetime]] = {}
+
+@app.middleware("http")
+async def limitador(request: Request, call_next):
+    ip = request.client.host
+    ahora = datetime.now(datetime.timezone.utc)
+
+    cubo = cubos_ip.setdefault(ip, deque())
+
+    while cubo and (ahora - cubo[0]) > VENTANA:
+        cubo.popleft()
+
+    if len(cubo) >= MAX_PETICIONES:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Demasiadas solicitudes: límite 5 req/s",
+        )
+
+    cubo.append(ahora)
+    respuesta = await call_next(request)
+    return respuesta
+
+
 security = HTTPBasic()
 
-# Base de datos simulada de usuarios con roles
+
 USUARIOS = {
     "admin": {"password": "admin123", "role": "admin"},
     "user": {"password": "user123", "role": "user"},
