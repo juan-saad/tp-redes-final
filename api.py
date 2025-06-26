@@ -1,6 +1,6 @@
 import secrets
-from datetime import datetime, timedelta
 from collections import deque
+from datetime import datetime, timedelta
 from typing import Dict, Deque
 
 import requests
@@ -20,10 +20,11 @@ MAX_PETICIONES = 5
 
 cubos_ip: Dict[str, Deque[datetime]] = {}
 
+
 @app.middleware("http")
 async def limitador(request: Request, call_next):
     ip = request.client.host
-    ahora = datetime.now(datetime.timezone.utc)
+    ahora = datetime.utcnow()
 
     cubo = cubos_ip.setdefault(ip, deque())
 
@@ -42,7 +43,6 @@ async def limitador(request: Request, call_next):
 
 
 security = HTTPBasic()
-
 
 USUARIOS = {
     "admin": {"password": "admin123", "role": "admin"},

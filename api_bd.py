@@ -1,8 +1,8 @@
-from collections import deque
-from datetime import datetime, timedelta
 import json
 import secrets
+from collections import deque
 from contextlib import asynccontextmanager
+from datetime import datetime, timedelta
 from json import dump, load
 from os import path, makedirs
 from typing import Deque, Dict
@@ -135,16 +135,16 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-
 VENTANA = timedelta(seconds=1)
 MAX_PETICIONES = 5
 
 cubos_ip: Dict[str, Deque[datetime]] = {}
 
+
 @app.middleware("http")
 async def limitador(request: Request, call_next):
     ip = request.client.host
-    ahora = datetime.now(datetime.timezone.utc)
+    ahora = datetime.utcnow()
 
     cubo = cubos_ip.setdefault(ip, deque())
 
